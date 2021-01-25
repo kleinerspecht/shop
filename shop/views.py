@@ -135,6 +135,7 @@ class CheckoutPage(View):
             street_address_2 = form.cleaned_data.get('street_address_2')
             country = form.cleaned_data.get('country')
             zip = form.cleaned_data.get('zip')
+            payment_type_chosen = form.cleaned_data.get('payment_option')
             payment_form = PaymentModel(
                 user=self.request.user,
                 first_name=first_name,
@@ -147,8 +148,22 @@ class CheckoutPage(View):
             order_model.billing_address = payment_form
             payment_form.save()
             order_model.save()
-            payment_type_chosen = form.cleaned_data.get('payment_option')
+            print(payment_type_chosen)
+            if payment_type_chosen == 'S':
+                return redirect('/complete-order')
+
             return redirect('/checkout')
+
+class PaymentView(View):
+    template_name = 'payment.html'
+    def get(self, request):
+        self.model = Order.objects.filter(user=request.user, confirmed=False)
+        if self.model.exists():
+            order_model = self.model[0]
+            order_items = order_model.items.all()
+            if order_items.exists():
+                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model})
+
 
 
 def register_page(request):
