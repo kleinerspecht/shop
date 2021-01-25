@@ -8,6 +8,7 @@ from ecommerce_shop import settings
 
 
 # Create your models here.
+from django_countries.fields import CountryField
 
 class CreateUser(UserCreationForm):
     class Meta:
@@ -58,6 +59,7 @@ class Order(models.Model):
     items = models.ManyToManyField(OrderItem)
     ordered_date = models.DateTimeField()
     confirmed = models.BooleanField(default=False)
+    billing_address = models.ForeignKey("PaymentModel", on_delete=models.SET_NULL, blank=True, null=True)
 
     @property
     def total_price(self):
@@ -74,7 +76,14 @@ class Order(models.Model):
             total += float(item.item_pricing) + tax
         return f'{total:.2f}'
 
-
+class PaymentModel(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    street_address = models.CharField(max_length=200)
+    street_address_2 = models.CharField(max_length=200, null=True, blank=True)
+    country = models.CharField(max_length=200)
+    zip = models.CharField(max_length=100)
 
 
 

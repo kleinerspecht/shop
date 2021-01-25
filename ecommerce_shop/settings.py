@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ecommerce_shop',
-    'shop'
+    'shop',
+    'django_countries'
 ]
 
 MIDDLEWARE = [

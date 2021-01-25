@@ -11,9 +11,10 @@ from django.utils import timezone
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 
-from .models import CreateUser, Categories, Item, OrderItem, Order
+from .forms import PaymentForm
+from .models import CreateUser, Categories, Item, OrderItem, Order, PaymentModel
 from django.contrib import messages
-
+from . import forms
 
 # Create your views here.
 
@@ -28,6 +29,8 @@ def contacts_page(request):
 
 def service_page(request):
     return render(request, 'service.html')
+def wishlist_page(request):
+    return render(request, 'wishlist.html')
 
 class ProductsPage(ListView):
     model = Item
@@ -118,10 +121,35 @@ class CheckoutPage(View):
             order_model = self.model[0]
             order_items = order_model.items.all()
             if order_items.exists():
-                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model})
+                form = PaymentForm()
+                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model, 'form': form})
+    def post(self, request):
+        form = PaymentForm(self.request.POST or None)
+        self.model = Order.objects.filter(user=request.user, confirmed=False)
+        if self.model.exists():
+            order_model = self.model[0]
+        if form.is_valid() and order_model:
+            first_name = form.cleaned_data.get('first_name')
+            last_name = form.cleaned_data.get('last_name')
+            street_address = form.cleaned_data.get('street_address')
+            street_address_2 = form.cleaned_data.get('street_address_2')
+            country = form.cleaned_data.get('country')
+            zip = form.cleaned_data.get('zip')
+            payment_form = PaymentModel(
+                user=self.request.user,
+                first_name=first_name,
+                last_name=last_name,
+                street_address=street_address,
+                street_address_2=street_address_2,
+                country=country,
+                zip=zip
+            )
+            order_model.billing_address = payment_form
+            payment_form.save()
+            order_model.save()
+            payment_type_chosen = form.cleaned_data.get('payment_option')
+            return redirect('/checkout')
 
-def wishlist_page(request):
-    return render(request, 'wishlist.html')
 
 def register_page(request):
     if request.method == 'POST':
@@ -139,12 +167,12 @@ def register_page(request):
 
 def login_page(request):
     if request.user.is_authenticated:
-        return redirect('http://127.0.0.1:8000/products')
+        return redirect('/products')
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('http://127.0.0.1:8000/products')
+            return redirect('/products')
     return render(request, 'login.html')
