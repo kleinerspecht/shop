@@ -2,7 +2,7 @@
 {% load static %}
 {% block main_content %}
 
-
+    <script src="https://js.stripe.com/v3/"></script>
     <!-- Start Top Search -->
     <div class="top-search">
         <div class="container">
@@ -37,51 +37,34 @@
 
             <div class="row">
                 <div class="col-sm-6 col-lg-6 mb-3">
-                    <div class="checkout-address">
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="cc-name">Name on card</label>
-                                    <input type="text" class="form-control" id="cc-name" placeholder="" required> <small class="text-muted">Full name as displayed on card</small>
-                                    <div class="invalid-feedback"> Name on card is required </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="cc-number">Credit card number</label>
-                                    <input type="text" class="form-control" id="cc-number" placeholder="" required>
-                                    <div class="invalid-feedback"> Credit card number is required </div>
-                                </div>
+                    <div class="cell example example4" id="example-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div id="example4-paymentRequest">
+                                <!--Stripe paymentRequestButton Element inserted here-->
                             </div>
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <label for="cc-expiration">Expiration</label>
-                                    <input type="text" class="form-control" id="cc-expiration" placeholder="" required>
-                                    <div class="invalid-feedback"> Expiration date required </div>
+                            <fieldset>
+                                <legend class="card-only" data-tid="elements_examples.form.pay_with_card">Pay with
+                                    card
+                                </legend>
+                                <legend class="payment-request-available"
+                                        data-tid="elements_examples.form.enter_card_manually">Or enter
+                                    card details
+                                </legend>
+                                <div class="container">
+                                    <div id="example4-card"></div>
+                                    <button type="submit" data-tid="elements_examples.form.donate_button">Pay ${{ order.tax_total_price }}
+                                    </button>
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="cc-expiration">CVV</label>
-                                    <input type="text" class="form-control" id="cc-cvv" placeholder="" required>
-                                    <div class="invalid-feedback"> Security code required </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="payment-icon">
-                                        <ul>
-                                            <li><img class="img-fluid" src="{% static 'images/payment-icon/1.png' %}" alt=""></li>
-                                            <li><img class="img-fluid" src="{% static 'images/payment-icon/2.png' %}" alt=""></li>
-                                            <li><img class="img-fluid" src="{% static 'images/payment-icon/3.png' %}" alt=""></li>
-                                            <li><img class="img-fluid" src="{% static 'images/payment-icon/5.png' %}" alt=""></li>
-                                            <li><img class="img-fluid" src="{% static 'images/payment-icon/7.png' %}" alt=""></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            <hr class="mb-1"> </form>
+                            </fieldset>
+                        </form>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-6 mb-3">
                     <div class="row">
                         <div class="col-md-12 col-lg-12">
                         </div>
-                                                <div class="col-md-12 col-lg-12">
+                        <div class="col-md-12 col-lg-12">
                             <div class="odr-box">
                                 <div class="title-left">
                                     <h3>Shopping cart</h3>
@@ -89,10 +72,12 @@
                                 <div class="rounded p-2 bg-light">
                                     <div class="media mb-2 border-bottom">
                                         {% for item in cart_items %}
-                                            <div class="media-body"><a href="detail.html">{{ item.item.item_info }}</a>
+                                            <div class="media-body"><a
+                                                    href="detail.html">{{ item.item.item_info }}</a>
                                                 <div class="small text-muted">{{ item.item.item_price }} <span
                                                         class="mx-2">|</span> Qty: {{ item.quantity }} <span
-                                                        class="mx-2">|</span> Subtotal: {{ item.item_pricing }}</div>
+                                                        class="mx-2">|</span> Subtotal: {{ item.item_pricing }}
+                                                </div>
                                             </div>
                                             </div>
                                         {% endfor %}
@@ -130,13 +115,90 @@
                                 <hr>
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-lg btn-block" type="submit" style="background-color: red;">Complete order</button>
-                    </form>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
+    <script>
+        (function () {
+            var stripe = Stripe('pk_test_51IDZZbE2NJTMzF2nAxF1D6kwKrISjGv6QwzZy66lUBejCI6pO769ksIxTMo0ZzZyzUVsrXulas0LOxKMNVwUjIuk00Fo5EwGEJ');
+            var elements = stripe.elements({
+                fonts: [
+                    {
+                        cssSrc: "https://rsms.me/inter/inter-ui.css"
+                    }
+                ],
+                // Stripe's examples are localized to specific languages, but if
+                // you wish to have Elements automatically detect your user's locale,
+                // use `locale: 'auto'` instead.
+                locale: window.__exampleLocale
+            });
+
+            /**
+             * Card Element
+             */
+            var card = elements.create("card", {
+                style: {
+                    base: {
+                        color: "#32325D",
+                        fontWeight: 500,
+                        fontFamily: "Inter UI, Open Sans, Segoe UI, sans-serif",
+                        fontSize: "16px",
+                        fontSmoothing: "antialiased",
+
+                        "::placeholder": {
+                            color: "#CFD7DF"
+                        }
+                    },
+                    invalid: {
+                        color: "#E25950"
+                    }
+                }
+            });
+
+            card.mount("#example4-card");
+
+            /**
+             * Payment Request Element
+             */
+            var paymentRequest = stripe.paymentRequest({
+                country: "US",
+                currency: "usd",
+                total: {
+                    amount: 2000,
+                    label: "Total"
+                }
+            });
+            paymentRequest.on("token", function (result) {
+                var example = document.querySelector(".example4");
+                example.querySelector(".token").innerText = result.token.id;
+                example.classList.add("submitted");
+                result.complete("success");
+            });
+
+            var paymentRequestElement = elements.create("paymentRequestButton", {
+                paymentRequest: paymentRequest,
+                style: {
+                    paymentRequestButton: {
+                        type: "donate"
+                    }
+                }
+            });
+
+            paymentRequest.canMakePayment().then(function (result) {
+                if (result) {
+                    document.querySelector(".example4 .card-only").style.display = "none";
+                    document.querySelector(
+                        ".example4 .payment-request-available"
+                    ).style.display =
+                        "block";
+                    paymentRequestElement.mount("#example4-paymentRequest");
+                }
+            });
+
+            registerElements([card, paymentRequestElement], "example4");
+        })();
+    </script>
     <!-- End Cart -->
 {% endblock %}

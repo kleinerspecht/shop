@@ -21,7 +21,7 @@ from django.urls import path
 from shop import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin', admin.site.urls),
     path('', views.home_page),
     path('about', views.about_page),
     path('contacts', views.contacts_page),

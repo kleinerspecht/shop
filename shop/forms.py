@@ -1,6 +1,7 @@
 from django import forms
 from django_countries.fields import CountryField
 from django_countries.widgets import CountrySelectWidget
+from creditcards.forms import CardNumberField, CardExpiryField, SecurityCodeField
 
 PAYMENT_CHOICES = (
     ('S', 'Stripe'),
@@ -21,3 +22,10 @@ class PaymentForm(forms.Form):
     payment_option = forms.ChoiceField(
         widget=forms.RadioSelect, choices=PAYMENT_CHOICES)
     zip = forms.CharField()
+
+
+class BillingForm(forms.Form):
+    cc_name = forms.CharField(max_length=150)
+    cc_number = CardNumberField(label='Card Number', widget=forms.TextInput(attrs={'size': '40'}))
+    cc_expiry = CardExpiryField(label='Expiration Date')
+    cc_code = SecurityCodeField(label='CVV/CVC')

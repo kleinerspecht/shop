@@ -1,6 +1,7 @@
 
 
 import slug as slug
+import stripe
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -11,7 +12,7 @@ from django.utils import timezone
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 
-from .forms import PaymentForm
+from .forms import PaymentForm, BillingForm
 from .models import CreateUser, Categories, Item, OrderItem, Order, PaymentModel
 from django.contrib import messages
 from . import forms
@@ -162,8 +163,17 @@ class PaymentView(View):
             order_model = self.model[0]
             order_items = order_model.items.all()
             if order_items.exists():
-                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model})
-
+                form = BillingForm()
+                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model, 'form': form})
+    def post(self, request):
+        order = Order.objects.get(user=request.user, confirmed=False)
+        token = self.request.POST.get('stripeToken')
+        stripe.Charge.create(
+            amount=order.tax_total_price * 100,
+            currency='usd',
+            source=token
+        )
+        #TODO - create payment model - save the payment to the order return a message to the user and handle exceptions
 
 
 def register_page(request):
