@@ -126,6 +126,7 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'ecommerce_shop/static/images')
 
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51IDZZbE2NJTMzF2nAxF1D6kwKrISjGv6QwzZy66lUBejCI6pO769ksIxTMo0ZzZyzUVsrXulas0LOxKMNVwUjIuk00Fo5EwGEJ'
+STRIPE_SECRET_KEY = 'sk_test_51IDZZbE2NJTMzF2nWClkb6gs3NhsnbodRkmVQrp0486LJH8Yv2qjKUDqfZtJF8JCZPyiWViyFoCpHdHcpoYSmssQ00NfNqU9cF'
 
 
 

@@ -38,11 +38,8 @@
             <div class="row">
                 <div class="col-sm-6 col-lg-6 mb-3">
                     <div class="cell example example4" id="example-4">
-                        <form method="post">
+                        <form id="stripe-payment-form" method="post">
                             {% csrf_token %}
-                            <div id="example4-paymentRequest">
-                                <!--Stripe paymentRequestButton Element inserted here-->
-                            </div>
                             <fieldset>
                                 <legend class="card-only" data-tid="elements_examples.form.pay_with_card">Pay with
                                     card
@@ -52,8 +49,10 @@
                                     card details
                                 </legend>
                                 <div class="container">
-                                    <div id="example4-card"></div>
-                                    <button type="submit" data-tid="elements_examples.form.donate_button">Pay ${{ order.tax_total_price }}
+                                    <div id="card-element"></div>
+                                    <div id="card-errors"></div>
+                                    <button type="submit" data-tid="elements_examples.form.donate_button">Pay
+                                        ${{ order.tax_total_price }}
                                     </button>
                                 </div>
                             </fieldset>
@@ -120,85 +119,155 @@
             </div>
         </div>
     </div>
+
+
+
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
-        (function () {
-            var stripe = Stripe('pk_test_51IDZZbE2NJTMzF2nAxF1D6kwKrISjGv6QwzZy66lUBejCI6pO769ksIxTMo0ZzZyzUVsrXulas0LOxKMNVwUjIuk00Fo5EwGEJ');
-            var elements = stripe.elements({
-                fonts: [
-                    {
-                        cssSrc: "https://rsms.me/inter/inter-ui.css"
-                    }
-                ],
-                // Stripe's examples are localized to specific languages, but if
-                // you wish to have Elements automatically detect your user's locale,
-                // use `locale: 'auto'` instead.
-                locale: window.__exampleLocale
-            });
+        var stripe = Stripe('pk_test_51IDZZbE2NJTMzF2nAxF1D6kwKrISjGv6QwzZy66lUBejCI6pO769ksIxTMo0ZzZyzUVsrXulas0LOxKMNVwUjIuk00Fo5EwGEJ');
+        var elements = stripe.elements();
+        var style = {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+            },
+        };
 
-            /**
-             * Card Element
-             */
-            var card = elements.create("card", {
-                style: {
-                    base: {
-                        color: "#32325D",
-                        fontWeight: 500,
-                        fontFamily: "Inter UI, Open Sans, Segoe UI, sans-serif",
-                        fontSize: "16px",
-                        fontSmoothing: "antialiased",
-
-                        "::placeholder": {
-                            color: "#CFD7DF"
-                        }
-                    },
-                    invalid: {
-                        color: "#E25950"
-                    }
+        var card = elements.create('card', {style: style});
+        card.mount('#card-element');
+        var form = document.getElementById('stripe-payment-form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            stripe.createToken(card).then(function (result) {
+                if (result.error) {
+                    var errorElement = document.getElementById('card-errors');
+                    errorElement.textContent = result.error.message;
+                } else {
+                    stripeTokenHandler(result.token);
                 }
             });
+        });
 
-            card.mount("#example4-card");
-
-            /**
-             * Payment Request Element
-             */
-            var paymentRequest = stripe.paymentRequest({
-                country: "US",
-                currency: "usd",
-                total: {
-                    amount: 2000,
-                    label: "Total"
-                }
-            });
-            paymentRequest.on("token", function (result) {
-                var example = document.querySelector(".example4");
-                example.querySelector(".token").innerText = result.token.id;
-                example.classList.add("submitted");
-                result.complete("success");
-            });
-
-            var paymentRequestElement = elements.create("paymentRequestButton", {
-                paymentRequest: paymentRequest,
-                style: {
-                    paymentRequestButton: {
-                        type: "donate"
-                    }
-                }
-            });
-
-            paymentRequest.canMakePayment().then(function (result) {
-                if (result) {
-                    document.querySelector(".example4 .card-only").style.display = "none";
-                    document.querySelector(
-                        ".example4 .payment-request-available"
-                    ).style.display =
-                        "block";
-                    paymentRequestElement.mount("#example4-paymentRequest");
-                }
-            });
-
-            registerElements([card, paymentRequestElement], "example4");
-        })();
+        function stripeTokenHandler(token) {
+            var form = document.getElementById('stripe-payment-form');
+            var hiddenInput = document.createElement('input');
+            hiddenInput.setAttribute('type', 'hidden');
+            hiddenInput.setAttribute('name', 'stripeToken');
+            hiddenInput.setAttribute('value', token.id);
+            form.appendChild(hiddenInput);
+            form.submit();
+        }
     </script>
+
+
+
+{#    <script>#}
+{#        (function () {#}
+{#            var stripe = Stripe('pk_test_51IDZZbE2NJTMzF2nAxF1D6kwKrISjGv6QwzZy66lUBejCI6pO769ksIxTMo0ZzZyzUVsrXulas0LOxKMNVwUjIuk00Fo5EwGEJ');#}
+{#            var elements = stripe.elements({#}
+{#                fonts: [#}
+{#                    {#}
+{#                        cssSrc: "https://rsms.me/inter/inter-ui.css"#}
+{#                    }#}
+{#                ],#}
+{#                // Stripe's examples are localized to specific languages, but if#}
+{#                // you wish to have Elements automatically detect your user's locale,#}
+{#                // use `locale: 'auto'` instead.#}
+{#                locale: window.__exampleLocale#}
+{#            });#}
+{##}
+{#            /**#}
+{#             * Card Element#}
+{#             */#}
+{#            var card = elements.create("card", {#}
+{#                style: {#}
+{#                    base: {#}
+{#                        color: "#32325D",#}
+{#                        fontWeight: 500,#}
+{#                        fontFamily: "Inter UI, Open Sans, Segoe UI, sans-serif",#}
+{#                        fontSize: "16px",#}
+{#                        fontSmoothing: "antialiased",#}
+{##}
+{#                        "::placeholder": {#}
+{#                            color: "#CFD7DF"#}
+{#                        }#}
+{#                    },#}
+{#                    invalid: {#}
+{#                        color: "#E25950"#}
+{#                    }#}
+{#                }#}
+{#            });#}
+{##}
+{#            card.mount("#example4-card");#}
+{##}
+{#            /**#}
+{#             * Payment Request Element#}
+{#             */#}
+{#            var paymentRequest = stripe.paymentRequest({#}
+{#                country: "US",#}
+{#                currency: "usd",#}
+{#                total: {#}
+{#                    amount: 2000,#}
+{#                    label: "Total"#}
+{#                }#}
+{#            });#}
+{#            paymentRequest.on("token", function (result) {#}
+{#                var example = document.querySelector(".example4");#}
+{#                example.querySelector(".token").innerText = result.token.id;#}
+{#                example.classList.add("submitted");#}
+{#                result.complete("success");#}
+{#            });#}
+{##}
+{#            var paymentRequestElement = elements.create("paymentRequestButton", {#}
+{#                paymentRequest: paymentRequest,#}
+{#                style: {#}
+{#                    paymentRequestButton: {#}
+{#                        type: "donate"#}
+{#                    }#}
+{#                }#}
+{#            });#}
+{##}
+{#            paymentRequest.canMakePayment().then(function (result) {#}
+{#                if (result) {#}
+{#                    document.querySelector(".example4 .card-only").style.display = "none";#}
+{#                    document.querySelector(#}
+{#                        ".example4 .payment-request-available"#}
+{#                    ).style.display =#}
+{#                        "block";#}
+{#                    paymentRequestElement.mount("#example4-paymentRequest");#}
+{#                }#}
+{#            });#}
+{##}
+{#            registerElements([card, paymentRequestElement], "example4");#}
+{##}
+{#            // Create a token or display an error when the form is submitted.#}
+{#            var form = document.getElementById('payment-form');#}
+{#            form.addEventListener('submit', function (event) {#}
+{#                event.preventDefault();#}
+{##}
+{#                stripe.createToken(card).then(function (result) {#}
+{#                    if (result.error) {#}
+{#                        // Inform the customer that there was an error.#}
+{#                    } else {#}
+{#                        // Send the token to your server.#}
+{#                        stripeTokenHandler(result.token);#}
+{#                    }#}
+{#                });#}
+{#            });#}
+{##}
+{#            function stripeTokenHandler(token) {#}
+{#                // Insert the token ID into the form so it gets submitted to the server#}
+{#                var form = document.getElementById('payment-form');#}
+{#                var hiddenInput = document.createElement('input');#}
+{#                hiddenInput.setAttribute('type', 'hidden');#}
+{#                hiddenInput.setAttribute('name', 'stripeToken');#}
+{#                hiddenInput.setAttribute('value', token.id);#}
+{#                form.appendChild(hiddenInput);#}
+{##}
+{#                // Submit the form#}
+{#                form.submit();#}
+{#            }#}
+{#        })();#}
+{#    </script>#}
     <!-- End Cart -->
 {% endblock %}

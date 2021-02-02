@@ -59,7 +59,8 @@ class Order(models.Model):
     items = models.ManyToManyField(OrderItem)
     ordered_date = models.DateTimeField()
     confirmed = models.BooleanField(default=False)
-    billing_address = models.ForeignKey("PaymentModel", on_delete=models.SET_NULL, blank=True, null=True)
+    billing_address = models.ForeignKey("PaymentModel", on_delete=models.SET_NULL, blank=True, null=True, related_name='billing_address')
+    payment = models.ForeignKey("PaidOrders", on_delete=models.SET_NULL, blank=True, null=True, related_name='payment')
 
     @property
     def total_price(self):
@@ -84,6 +85,14 @@ class PaymentModel(models.Model):
     street_address_2 = models.CharField(max_length=200, null=True, blank=True)
     country = models.CharField(max_length=200)
     zip = models.CharField(max_length=100)
+
+
+class PaidOrders(models.Model):
+    stripe_charge_id = models.CharField(max_length=100)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    amount =  models.FloatField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
 
 
 

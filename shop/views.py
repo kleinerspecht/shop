@@ -1,5 +1,3 @@
-
-
 import slug as slug
 import stripe
 from django.contrib.auth import authenticate, login
@@ -12,35 +10,48 @@ from django.utils import timezone
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 
+from ecommerce_shop import settings
 from .forms import PaymentForm, BillingForm
-from .models import CreateUser, Categories, Item, OrderItem, Order, PaymentModel
+from .models import CreateUser, Categories, Item, OrderItem, Order, PaymentModel, PaidOrders
 from django.contrib import messages
 from . import forms
+import stripe
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 # Create your views here.
 
 def home_page(request):
     return render(request, 'index.html')
 
+
 def about_page(request):
     return render(request, 'about.html')
+
 
 def contacts_page(request):
     return render(request, 'contact-us.html')
 
+
 def service_page(request):
     return render(request, 'service.html')
+
+
 def wishlist_page(request):
     return render(request, 'wishlist.html')
+
 
 class ProductsPage(ListView):
     model = Item
     products_cat = Categories.objects.annotate(prod_num=Count('item'))
     template_name = 'shop.html'
 
+
 class ProductDetail(DetailView):
     model = Item
     template_name = 'shop-detail.html'
+
 
 @login_required(login_url='/login')
 def add_to_cart(request, slug):
@@ -63,6 +74,7 @@ def add_to_cart(request, slug):
     order.items.add(order_item)
     return redirect('/cart')
 
+
 def remove_from_cart(request, slug):
     item = get_object_or_404(Item, slug=slug)
     order_qs = Order.objects.filter(user=request.user, confirmed=False)
@@ -81,8 +93,10 @@ def remove_from_cart(request, slug):
         return redirect('/cart')
     return redirect('/cart')
 
+
 def account_page(request):
     return render(request, 'my-account.html')
+
 
 class CartPageView(View):
     template_name = 'cart.html'
@@ -116,6 +130,7 @@ class CartPageView(View):
 
 class CheckoutPage(View):
     template_name = 'checkout.html'
+
     def get(self, request):
         self.model = Order.objects.filter(user=request.user, confirmed=False)
         if self.model.exists():
@@ -123,7 +138,9 @@ class CheckoutPage(View):
             order_items = order_model.items.all()
             if order_items.exists():
                 form = PaymentForm()
-                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model, 'form': form})
+                return render(request, self.template_name,
+                              {'cart_items': order_items, 'order': order_model, 'form': form})
+
     def post(self, request):
         form = PaymentForm(self.request.POST or None)
         self.model = Order.objects.filter(user=request.user, confirmed=False)
@@ -155,8 +172,10 @@ class CheckoutPage(View):
 
             return redirect('/checkout')
 
+
 class PaymentView(View):
     template_name = 'payment.html'
+
     def get(self, request):
         self.model = Order.objects.filter(user=request.user, confirmed=False)
         if self.model.exists():
@@ -164,16 +183,62 @@ class PaymentView(View):
             order_items = order_model.items.all()
             if order_items.exists():
                 form = BillingForm()
-                return render(request, self.template_name, {'cart_items': order_items, 'order': order_model, 'form': form})
+                return render(request, self.template_name,
+                              {'cart_items': order_items, 'order': order_model, 'form': form})
+
     def post(self, request):
         order = Order.objects.get(user=request.user, confirmed=False)
         token = self.request.POST.get('stripeToken')
-        stripe.Charge.create(
-            amount=order.tax_total_price * 100,
-            currency='usd',
-            source=token
+        amount = 56 * 10
+
+        charge = stripe.PaymentIntent.create(
+            amount=amount,
+            currency="bgn",
+            confirmation_method="manual",
+            confirm="True",
+            capture_method="automatic",
+            payment_method_data=dict(
+                type="card",
+                card=dict(
+                    token=token
+                )
+            )
         )
-        #TODO - create payment model - save the payment to the order return a message to the user and handle exceptions
+
+
+        # try:
+        #     charge = stripe.Charge.create(
+        #         amount=amount,
+        #         currency="usd",
+        #         token=token,
+        #     )
+        #     return HttpResponse('Charge created!')
+        # except stripe.error.CardError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except stripe.error.RateLimitError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except stripe.error.InvalidRequestError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except stripe.error.AuthenticationError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except stripe.error.APIConnectionError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except stripe.error.StripeError as e:
+        #     messages.error(self.request, f'{e.code}')
+        # except Exception as e:
+        #     print('I fucked up the code...')
+        # fill the payment model with the info from stripe/payment
+        payment = PaidOrders()
+        payment.stripe_charge_id = charge['id']
+        payment.user = self.request.user
+        payment.amount = order.tax_total_price
+        payment.save()
+
+        # populate order info
+        order.confirmed = True
+        order.payment = payment
+        order.save()
+        return redirect(ProductsPage)
 
 
 def register_page(request):
@@ -185,10 +250,12 @@ def register_page(request):
         else:
             user_message = f"{form.error_messages}"
             if 'password_mismatch' in user_message:
-                messages.error(request, 'Incorrect password. Make sure your password has letters, symbols, digits and a capital letter!')
+                messages.error(request,
+                               'Incorrect password. Make sure your password has letters, symbols, digits and a capital letter!')
 
     form = CreateUser()
-    return render(request, 'register.html', {'form':form})
+    return render(request, 'register.html', {'form': form})
+
 
 def login_page(request):
     if request.user.is_authenticated:
