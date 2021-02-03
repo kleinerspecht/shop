@@ -1,6 +1,6 @@
 import slug as slug
 import stripe
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Count
@@ -41,11 +41,18 @@ def service_page(request):
 def wishlist_page(request):
     return render(request, 'wishlist.html')
 
+class AccountPage(View):
+    template_name = 'my-account.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
 
 class ProductsPage(ListView):
     model = Item
     products_cat = Categories.objects.annotate(prod_num=Count('item'))
     template_name = 'shop.html'
+
 
 
 class ProductDetail(DetailView):
@@ -93,11 +100,6 @@ def remove_from_cart(request, slug):
         return redirect('/cart')
     return redirect('/cart')
 
-
-def account_page(request):
-    return render(request, 'my-account.html')
-
-
 class CartPageView(View):
     template_name = 'cart.html'
 
@@ -140,6 +142,8 @@ class CheckoutPage(View):
                 form = PaymentForm()
                 return render(request, self.template_name,
                               {'cart_items': order_items, 'order': order_model, 'form': form})
+        else:
+            return HttpResponse('There is no cart/order that we can proceed with processing!')
 
     def post(self, request):
         form = PaymentForm(self.request.POST or None)
@@ -189,44 +193,38 @@ class PaymentView(View):
     def post(self, request):
         order = Order.objects.get(user=request.user, confirmed=False)
         token = self.request.POST.get('stripeToken')
-        amount = 56 * 10
+        amount = 56 * 100 #price is in cents.
 
-        charge = stripe.PaymentIntent.create(
-            amount=amount,
-            currency="bgn",
-            confirmation_method="manual",
-            confirm="True",
-            capture_method="automatic",
-            payment_method_data=dict(
-                type="card",
-                card=dict(
-                    token=token
+        try:
+            charge = stripe.PaymentIntent.create(
+                amount=amount,
+                currency="bgn",
+                confirmation_method="manual",
+                confirm="True",
+                capture_method="automatic",
+                payment_method_data=dict(
+                    type="card",
+                    card=dict(
+                        token=token
+                    )
                 )
             )
-        )
 
+        except stripe.error.CardError as e:
+            messages.error(self.request, f'{e.code}')
+        except stripe.error.RateLimitError as e:
+            messages.error(self.request, f'{e.code}')
+        except stripe.error.InvalidRequestError as e:
+            messages.error(self.request, f'{e.code}')
+        except stripe.error.AuthenticationError as e:
+            messages.error(self.request, f'{e.code}')
+        except stripe.error.APIConnectionError as e:
+            messages.error(self.request, f'{e.code}')
+        except stripe.error.StripeError as e:
+            messages.error(self.request, f'{e.code}')
+        except Exception as e:
+            print('I fucked up the code...')
 
-        # try:
-        #     charge = stripe.Charge.create(
-        #         amount=amount,
-        #         currency="usd",
-        #         token=token,
-        #     )
-        #     return HttpResponse('Charge created!')
-        # except stripe.error.CardError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except stripe.error.RateLimitError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except stripe.error.InvalidRequestError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except stripe.error.AuthenticationError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except stripe.error.APIConnectionError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except stripe.error.StripeError as e:
-        #     messages.error(self.request, f'{e.code}')
-        # except Exception as e:
-        #     print('I fucked up the code...')
         # fill the payment model with the info from stripe/payment
         payment = PaidOrders()
         payment.stripe_charge_id = charge['id']
@@ -238,7 +236,7 @@ class PaymentView(View):
         order.confirmed = True
         order.payment = payment
         order.save()
-        return redirect(ProductsPage)
+        return redirect('/products')
 
 
 def register_page(request):
@@ -268,3 +266,8 @@ def login_page(request):
             login(request, user)
             return redirect('/products')
     return render(request, 'login.html')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect(home_page)

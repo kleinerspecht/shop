@@ -27,7 +27,6 @@ urlpatterns = [
     path('contacts', views.contacts_page),
     path('service', views.service_page),
     path('products', views.ProductsPage.as_view()),
-    path('my-account', views.account_page),
     path('cart', login_required(views.CartPageView.as_view(), login_url='/login')),
     path('checkout', views.CheckoutPage.as_view()),
     path('wishlist', views.wishlist_page),
@@ -36,6 +35,8 @@ urlpatterns = [
     path('products/<slug>', views.ProductDetail.as_view(), name='product'),
     path('add-to-cart/<slug>', views.add_to_cart),
     path('remove-from-cart/<slug>', views.remove_from_cart),
-    path('complete-order', views.PaymentView.as_view())
+    path('complete-order', views.PaymentView.as_view()),
+    path('logout', views.logout_view),
+    path('my-account', views.AccountPage.as_view())
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
