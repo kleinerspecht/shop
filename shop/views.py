@@ -47,6 +47,13 @@ class AccountPage(View):
     def get(self, request):
         return render(request, self.template_name)
 
+class AccountOrdersPage(View):
+
+    def get(self, request, user_page):
+        user_orders = Order.objects.filter(user=request.user, confirmed=True)
+        if user_page == 'my-orders':
+            return render(request, 'my-orders.html',  {'orders': user_orders})
+
 
 class ProductsPage(ListView):
     model = Item
@@ -168,6 +175,7 @@ class CheckoutPage(View):
                 zip=zip
             )
             order_model.billing_address = payment_form
+            order_model.delivery_status = 'Order confirmed!'
             payment_form.save()
             order_model.save()
             print(payment_type_chosen)

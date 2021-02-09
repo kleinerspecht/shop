@@ -10,6 +10,14 @@ from ecommerce_shop import settings
 # Create your models here.
 from django_countries.fields import CountryField
 
+DELIVEY_CHOICES = [
+    ('Order confirmed!', 'Order confirmed!'),
+    ('Order processed!', 'Order processed!'),
+    ('Order dispatched!', 'Order dispatched!'),
+    ('Order arrived!', 'Order arrived!')
+
+]
+
 class CreateUser(UserCreationForm):
     class Meta:
         model = User
@@ -61,6 +69,7 @@ class Order(models.Model):
     confirmed = models.BooleanField(default=False)
     billing_address = models.ForeignKey("PaymentModel", on_delete=models.SET_NULL, blank=True, null=True, related_name='billing_address')
     payment = models.ForeignKey("PaidOrders", on_delete=models.SET_NULL, blank=True, null=True, related_name='payment')
+    delivery_status = models.CharField(max_length=70, choices=DELIVEY_CHOICES, null=True, blank=True,)
 
     @property
     def total_price(self):
