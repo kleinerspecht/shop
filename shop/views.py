@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 
@@ -44,16 +45,26 @@ def wishlist_page(request):
 class AccountPage(View):
     template_name = 'my-account.html'
 
+    @method_decorator(login_required(login_url='/login'))
     def get(self, request):
         return render(request, self.template_name)
 
+
 class AccountOrdersPage(View):
 
+    @method_decorator(login_required(login_url='/login'))
     def get(self, request, user_page):
         user_orders = Order.objects.filter(user=request.user, confirmed=True)
         if user_page == 'my-orders':
             return render(request, 'my-orders.html',  {'orders': user_orders})
 
+
+class AccountOrdersDetails(View):
+
+    @method_decorator(login_required(login_url='/login'))
+    def get(self, request, order_id):
+        order = Order.objects.filter(user=request.user, confirmed=True, id=order_id)[0]
+        return render(request, 'order-details.html', {'order': order})
 
 class ProductsPage(ListView):
     model = Item
