@@ -279,3 +279,9 @@ def login_page(request):
 def logout_view(request):
     logout(request)
     return redirect(home_page)
+
+
+class AccountDetailsView(View):
+    template_name = 'account-details.html'
+    def get(self, request):
+        return render(request, self.template_name)
