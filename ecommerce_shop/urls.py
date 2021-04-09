@@ -38,7 +38,6 @@ urlpatterns = [
     path('complete-order', views.PaymentView.as_view()),
     path('logout', views.logout_view),
     path('my-account', views.AccountPage.as_view()),
-    path('my-account/<str:user_page>', views.AccountOrdersPage.as_view()),
-    path('my-account/order-details/<int:order_id>', views.AccountOrdersDetails.as_view())
+    path('my-account/<str:user_page>', views.AccountOrdersPage.as_view())
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
