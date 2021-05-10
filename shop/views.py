@@ -67,7 +67,7 @@ class ProductDetail(DetailView):
     template_name = 'shop-detail.html'
 
 
-@login_required(login_url='/login')
+@login_required(login_url='/login', redirect_field_name='next')
 def add_to_cart(request, slug):
     item = get_object_or_404(Item, slug=slug)
     order_qs = Order.objects.filter(user=request.user, confirmed=False)
@@ -284,4 +284,5 @@ def logout_view(request):
 class AccountDetailsView(View):
     template_name = 'account-details.html'
     def get(self, request):
-        return render(request, self.template_name)
+        logged_user = request.user
+        return render(request, self.template_name, {'user': logged_user})
