@@ -29,3 +29,7 @@ class BillingForm(forms.Form):
     cc_number = CardNumberField(label='Card Number', widget=forms.TextInput(attrs={'size': '40'}))
     cc_expiry = CardExpiryField(label='Expiration Date')
     cc_code = SecurityCodeField(label='CVV/CVC')
+
+class AccountDetailsForm(forms.Form):
+    pass
+    #todo - make the form for the account details page

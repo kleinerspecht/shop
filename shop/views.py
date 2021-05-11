@@ -286,3 +286,7 @@ class AccountDetailsView(View):
     def get(self, request):
         logged_user = request.user
         return render(request, self.template_name, {'user': logged_user})
+    def post(self, request):
+        pass
+        # todo - make POST request to the FORM
+
